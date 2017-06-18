@@ -16,11 +16,19 @@
 #include <sys/stat.h>
 #import "authpack.h"
 
+#import "FUVideoFrame.h"
+#import "FUOpenGLView.h"
+
 @interface ViewController ()<FUAPIDemoBarDelegate,FUCameraDelegate>
 {
     //MARK: Faceunity
     int items[3];
     int frameID;
+    
+    struct FUVideoFrame inFrame ;
+    struct FUVideoFrame outFrame;
+    
+    CVPixelBufferRef pixelBuffer ;
     
     // --------------- Faceunity ----------------
     
@@ -32,8 +40,6 @@
 
 @property (nonatomic, strong) FUCamera *yuvCamera;//YUV摄像头
 
-@property (nonatomic, strong) AVSampleBufferDisplayLayer *bufferDisplayer;
-
 @property (weak, nonatomic) IBOutlet UILabel *noTrackView;
 
 @property (weak, nonatomic) IBOutlet UIButton *photoBtn;
@@ -44,6 +50,12 @@
 
 @property (weak, nonatomic) IBOutlet UIButton *changeCameraBtn;
 
+@property (strong, nonatomic) IBOutlet FUOpenGLView *bgraGLView;
+
+// 输出队列
+@property (nonatomic, copy) dispatch_queue_t outputQueue;
+// 信号量
+@property (nonatomic, strong)dispatch_semaphore_t bufferSemaphore ;
 @end
 
 @implementation ViewController
@@ -56,14 +68,16 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
+    
+    _outputQueue = dispatch_queue_create("output.FaceUnity", DISPATCH_QUEUE_SERIAL);
+    _bufferSemaphore = dispatch_semaphore_create(1);
+    
     [self addObserver];
     
     [self initFaceunity];
     
     curCamera = self.bgraCamera;
     [curCamera startUp];
-    
-    self.bufferDisplayer.frame = self.view.bounds;
     
 }
 
@@ -161,20 +175,6 @@
     return _yuvCamera;
 }
 
-//显示摄像头画面
-- (AVSampleBufferDisplayLayer *)bufferDisplayer
-{
-    if (!_bufferDisplayer) {
-        _bufferDisplayer = [[AVSampleBufferDisplayLayer alloc] init];
-        _bufferDisplayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-        _bufferDisplayer.frame = self.view.bounds;
-        
-        [self.view.layer insertSublayer:_bufferDisplayer atIndex:0];
-    }
-    
-    return _bufferDisplayer;
-}
-
 - (void)willResignActive
 {
     
@@ -217,8 +217,10 @@
             [whiteView removeFromSuperview];
         }];
     }];
+//    
+//    [curCamera takePhotoAndSave];
     
-    [curCamera takePhotoAndSave];
+    [self.bgraGLView takePhotoAndSave];
 }
 
 #pragma -显示工具栏
@@ -284,55 +286,113 @@
         return;
     }
     
-    //如果当前环境中已存在EAGLContext，此步骤可省略，但必须要调用[EAGLContext setCurrentContext:curContext]函数。
-    #warning 此步骤不可放在异步线程中执行
+    CVPixelBufferRef buffer = CMSampleBufferGetImageBuffer(sampleBuffer) ;
+    CVPixelBufferLockBaseAddress(buffer, 0);
+    size_t width = CVPixelBufferGetWidth(buffer);
+    size_t height = CVPixelBufferGetHeight(buffer);
+    size_t size = CVPixelBufferGetDataSize(buffer);
+    size_t stride = CVPixelBufferGetBytesPerRow(buffer);
+    uint8_t *bufferImage = CVPixelBufferGetBaseAddress(buffer) ;
+    
+    if (inFrame.width != width || inFrame.height != height) {
+        free(inFrame.bgraImg);
+        inFrame.bgraImg = malloc(size * sizeof(void));
+    }
+    inFrame.width = width ;
+    inFrame.height = height ;
+    inFrame.size = size ;
+    inFrame.stride = stride ;
+    inFrame.isUsed = NO ;
+    memcpy(inFrame.bgraImg, bufferImage, size);
+    CVPixelBufferUnlockBaseAddress(buffer, 0);
+    
+    if (dispatch_semaphore_wait(_bufferSemaphore, DISPATCH_TIME_NOW) != 0) {
+//        NSLog(@"********* 进入~");
+        return;
+    }
+    
+    dispatch_async(_outputQueue, ^{
+        
+        if (outFrame.width != inFrame.width || outFrame.height != inFrame.height) {
+            free(outFrame.bgraImg) ;
+            outFrame.bgraImg = malloc(size * sizeof(void)) ;
+        }
+        outFrame.width = inFrame.width ;
+        outFrame.height = inFrame.height ;
+        outFrame.size = inFrame.size ;
+        outFrame.stride = inFrame.stride ;
+        memcpy(outFrame.bgraImg, inFrame.bgraImg, size) ;
+        //        inFrame.isUsed = YES ;
+        [self outframCopyCompleted];
+        
+        dispatch_semaphore_signal(_bufferSemaphore);
+    });
+}
+
+- (void)outframCopyCompleted {
+    
+    while (!inFrame.isUsed) {
+//        NSLog(@"------------------------- 循环输出~ ");
+        outFrame.width = inFrame.width ;
+        outFrame.height = inFrame.height ;
+        outFrame.size = inFrame.size ;
+        outFrame.stride = inFrame.stride ;
+        memcpy(outFrame.bgraImg, inFrame.bgraImg, inFrame.size);
+        //        inFrame.isUsed = YES ;
+        
+        [self getPixelbufferWithOutVideoFrame];
+    }
+}
+
+- (void)getPixelbufferWithOutVideoFrame {
+    
+    size_t width = CVPixelBufferGetWidth(pixelBuffer);
+    size_t height = CVPixelBufferGetHeight(pixelBuffer);
+    
+    if (!pixelBuffer || width != outFrame.width || height != outFrame.height ) {
+        [self createPixelBufferWithSize:CGSizeMake(outFrame.width, outFrame.height)];
+    }
+    
+    CVPixelBufferLockBaseAddress(pixelBuffer, 0);
+    
+    uint8_t *bufferImg = CVPixelBufferGetBaseAddress(pixelBuffer);
+    memcpy(bufferImg, outFrame.bgraImg, outFrame.size);
+    
+    CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
+    
     [self setUpContext];
     
-    //人脸跟踪
-    int curTrack = fuIsTracking();
-    dispatch_async(dispatch_get_main_queue(), ^{
-        self.noTrackView.hidden = curTrack;
-    });
+    fuItemSetParamd(items[1], "cheek_thinning", 1.0); //瘦脸
+    fuItemSetParamd(items[1], "eye_enlarging", 0.5); //大眼
+    fuItemSetParamd(items[1], "color_level", 0.2); //美白
+    fuItemSetParams(items[1], "filter_name", (char *)[@"nature" UTF8String]); //滤镜
+    fuItemSetParamd(items[1], "blur_level", 6); //磨皮
+    fuItemSetParamd(items[1], "face_shape", 3); //瘦脸类型
+    fuItemSetParamd(items[1], "face_shape_level", 0.5); //瘦脸等级
+    fuItemSetParamd(items[1], "red_level", 0.5); //红润
     
-    #warning 如果需开启手势检测，请打开下方的注释
-    //加载爱心道具
-//    if (items[2] == 0) {
-//        [self loadHeart];
-//    }
-    
-    //设置美颜效果（滤镜、磨皮、美白、瘦脸、大眼....）
-    fuItemSetParamd(items[1], "cheek_thinning", self.demoBar.thinningLevel); //瘦脸
-    fuItemSetParamd(items[1], "eye_enlarging", self.demoBar.enlargingLevel); //大眼
-    fuItemSetParamd(items[1], "color_level", self.demoBar.beautyLevel); //美白
-    fuItemSetParams(items[1], "filter_name", (char *)[_demoBar.selectedFilter UTF8String]); //滤镜
-    fuItemSetParamd(items[1], "blur_level", self.demoBar.selectedBlur); //磨皮
-    fuItemSetParamd(items[1], "face_shape", self.demoBar.faceShape); //瘦脸类型
-    fuItemSetParamd(items[1], "face_shape_level", self.demoBar.faceShapeLevel); //瘦脸等级
-    fuItemSetParamd(items[1], "red_level", self.demoBar.redLevel); //红润
-    
-    //Faceunity核心接口，将道具及美颜效果作用到图像中，执行完此函数pixelBuffer即包含美颜及贴纸效果
-    #warning 此步骤不可放在异步线程中执行
-    CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
-    
-    [[FURenderer shareRenderer] renderPixelBuffer:pixelBuffer withFrameId:frameID items:items itemCount:3 flipx:YES];//flipx 参数设为YES可以使道具做水平方向的镜像翻转
+    [[FURenderer shareRenderer] renderPixelBuffer:pixelBuffer withFrameId:frameID items:items itemCount:3 flipx:YES];
     frameID += 1;
     
-    #warning 执行完上一步骤，即可将pixelBuffer绘制到屏幕上或推流到服务器进行直播
-    //本地显示视频图像
-    
-    CFRetain(sampleBuffer);
-    dispatch_async(dispatch_get_main_queue(), ^{
-        
-        if (self.bufferDisplayer.status == AVQueuedSampleBufferRenderingStatusFailed) {
-            [self.bufferDisplayer flush];
-        }
-        
-        if ([self.bufferDisplayer isReadyForMoreMediaData]) {
-            [self.bufferDisplayer enqueueSampleBuffer:sampleBuffer];
-        }
-        
-        CFRelease(sampleBuffer);
-    });
+    [self.bgraGLView displayPixelBuffer:pixelBuffer IsMirror:NO];
+}
+
+- (void)createPixelBufferWithSize:(CGSize)size {
+    if (pixelBuffer) {
+        CFRelease(pixelBuffer) ;
+        pixelBuffer = nil ;
+    }
+    NSDictionary* pixelBufferOptions = @{ (NSString*) kCVPixelBufferPixelFormatTypeKey :
+                                              @(kCVPixelFormatType_32BGRA),
+                                          (NSString*) kCVPixelBufferWidthKey : @(size.width),
+                                          (NSString*) kCVPixelBufferHeightKey : @(size.height),
+                                          (NSString*) kCVPixelBufferOpenGLESCompatibilityKey : @YES,
+                                          (NSString*) kCVPixelBufferIOSurfacePropertiesKey : @{}};
+    CVPixelBufferCreate(kCFAllocatorDefault,
+                        size.width, size.height,
+                        kCVPixelFormatType_32BGRA,
+                        (__bridge CFDictionaryRef)pixelBufferOptions,
+                        &pixelBuffer);
 }
 
 #pragma -Faceunity Set EAGLContext

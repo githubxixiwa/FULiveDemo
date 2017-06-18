@@ -12,7 +12,6 @@
 @protocol FUCameraDelegate <NSObject>
 
 - (void)didOutputVideoSampleBuffer:(CMSampleBufferRef)sampleBuffer;
-
 @end
 
 @interface FUCamera : NSObject

@@ -27,16 +27,17 @@
 		CD2E16E91E52AE0100A2C2A4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CD2E16E81E52AE0100A2C2A4 /* Assets.xcassets */; };
 		CD2E16EC1E52AE0100A2C2A4 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CD2E16EA1E52AE0100A2C2A4 /* LaunchScreen.storyboard */; };
 		CD2E17231E52AE4500A2C2A4 /* FUCamera.m in Sources */ = {isa = PBXBuildFile; fileRef = CD2E171C1E52AE4500A2C2A4 /* FUCamera.m */; };
-
 		CD3383921EB1EAA40022D1A8 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = CD3383911EB1EAA40022D1A8 /* ViewController.m */; };
 		CD3383951EB1F0770022D1A8 /* FUAPIDemoBar.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CD3383931EB1F06F0022D1A8 /* FUAPIDemoBar.framework */; };
 		CD3383961EB1F0770022D1A8 /* FUAPIDemoBar.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CD3383931EB1F06F0022D1A8 /* FUAPIDemoBar.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-
 		CD3C58AA1E779D6B004FA2E0 /* libnama.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CD3C58A61E779D6B004FA2E0 /* libnama.a */; };
 		CD3C58AB1E779D6B004FA2E0 /* face_beautification.bundle in Resources */ = {isa = PBXBuildFile; fileRef = CD3C58A81E779D6B004FA2E0 /* face_beautification.bundle */; };
 		CD3C58AC1E779D6B004FA2E0 /* v3.bundle in Resources */ = {isa = PBXBuildFile; fileRef = CD3C58A91E779D6B004FA2E0 /* v3.bundle */; };
 		CD6157171E5696220083EF33 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CD6157151E56957A0083EF33 /* Accelerate.framework */; };
 		CDA743BB1E854CE10088F471 /* heart_v2.bundle in Resources */ = {isa = PBXBuildFile; fileRef = CDA743BA1E854CE10088F471 /* heart_v2.bundle */; };
+		E9F3A3D71EF6225200F80392 /* FUOpenGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = E9F3A3D41EF6225200F80392 /* FUOpenGLView.m */; };
+		E9F3A3D81EF6225200F80392 /* Shader.fsh in Resources */ = {isa = PBXBuildFile; fileRef = E9F3A3D51EF6225200F80392 /* Shader.fsh */; };
+		E9F3A3D91EF6225200F80392 /* Shader.vsh in Resources */ = {isa = PBXBuildFile; fileRef = E9F3A3D61EF6225200F80392 /* Shader.vsh */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -80,10 +81,8 @@
 		CD2E16ED1E52AE0100A2C2A4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		CD2E171B1E52AE4500A2C2A4 /* FUCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FUCamera.h; sourceTree = "<group>"; };
 		CD2E171C1E52AE4500A2C2A4 /* FUCamera.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FUCamera.m; sourceTree = "<group>"; };
-
 		CD3383911EB1EAA40022D1A8 /* ViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		CD3383931EB1F06F0022D1A8 /* FUAPIDemoBar.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FUAPIDemoBar.framework; sourceTree = "<group>"; };
-
 		CD3C58A11E779D56004FA2E0 /* authpack.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = authpack.h; sourceTree = "<group>"; };
 		CD3C58A41E779D6B004FA2E0 /* funama.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = funama.h; sourceTree = "<group>"; };
 		CD3C58A51E779D6B004FA2E0 /* FURenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FURenderer.h; sourceTree = "<group>"; };
@@ -93,6 +92,11 @@
 		CD6157151E56957A0083EF33 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		CDA743BA1E854CE10088F471 /* heart_v2.bundle */ = {isa = PBXFileReference; lastKnownFileType = file; path = heart_v2.bundle; sourceTree = "<group>"; };
 		D8F03B76C701D6E9FC815193 /* libPods-FULiveDemo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-FULiveDemo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E9F3A3D11EF620F400F80392 /* FUVideoFrame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FUVideoFrame.h; sourceTree = "<group>"; };
+		E9F3A3D31EF6225200F80392 /* FUOpenGLView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FUOpenGLView.h; sourceTree = "<group>"; };
+		E9F3A3D41EF6225200F80392 /* FUOpenGLView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FUOpenGLView.m; sourceTree = "<group>"; };
+		E9F3A3D51EF6225200F80392 /* Shader.fsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = Shader.fsh; sourceTree = "<group>"; };
+		E9F3A3D61EF6225200F80392 /* Shader.vsh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = Shader.vsh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -180,6 +184,7 @@
 		CD2E16DB1E52AE0100A2C2A4 /* FULiveDemo */ = {
 			isa = PBXGroup;
 			children = (
+				E9F3A3D21EF6225200F80392 /* FUOpenGLView */,
 				CD2E17171E52AE4500A2C2A4 /* DemoCode */,
 				CD0A09A21E5D7034000FC2C3 /* Faceunity */,
 				CD2E16DF1E52AE0100A2C2A4 /* AppDelegate.h */,
@@ -206,11 +211,10 @@
 		CD2E17171E52AE4500A2C2A4 /* DemoCode */ = {
 			isa = PBXGroup;
 			children = (
-
 				CD3383931EB1F06F0022D1A8 /* FUAPIDemoBar.framework */,
-
 				CD2E171B1E52AE4500A2C2A4 /* FUCamera.h */,
 				CD2E171C1E52AE4500A2C2A4 /* FUCamera.m */,
+				E9F3A3D11EF620F400F80392 /* FUVideoFrame.h */,
 			);
 			path = DemoCode;
 			sourceTree = "<group>";
@@ -241,6 +245,17 @@
 				CD3C58A91E779D6B004FA2E0 /* v3.bundle */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		E9F3A3D21EF6225200F80392 /* FUOpenGLView */ = {
+			isa = PBXGroup;
+			children = (
+				E9F3A3D31EF6225200F80392 /* FUOpenGLView.h */,
+				E9F3A3D41EF6225200F80392 /* FUOpenGLView.m */,
+				E9F3A3D51EF6225200F80392 /* Shader.fsh */,
+				E9F3A3D61EF6225200F80392 /* Shader.vsh */,
+			);
+			path = FUOpenGLView;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -311,9 +326,11 @@
 				CD0A09C31E5D7034000FC2C3 /* item0208.bundle in Resources */,
 				CD0A09C91E5D7034000FC2C3 /* YellowEar.bundle in Resources */,
 				CD3C58AB1E779D6B004FA2E0 /* face_beautification.bundle in Resources */,
+				E9F3A3D81EF6225200F80392 /* Shader.fsh in Resources */,
 				CD0A09C61E5D7034000FC2C3 /* Mood.bundle in Resources */,
 				CD2E16EC1E52AE0100A2C2A4 /* LaunchScreen.storyboard in Resources */,
 				CD0A09BC1E5D7034000FC2C3 /* BeagleDog.bundle in Resources */,
+				E9F3A3D91EF6225200F80392 /* Shader.vsh in Resources */,
 				CD0A09C21E5D7034000FC2C3 /* item0204.bundle in Resources */,
 				CD0A09BE1E5D7034000FC2C3 /* Deer.bundle in Resources */,
 				CD0A09C71E5D7034000FC2C3 /* PrincessCrown.bundle in Resources */,
@@ -386,9 +403,9 @@
 			files = (
 				CD3383921EB1EAA40022D1A8 /* ViewController.m in Sources */,
 				CD2E17231E52AE4500A2C2A4 /* FUCamera.m in Sources */,
-
 				CD2E16E11E52AE0100A2C2A4 /* AppDelegate.m in Sources */,
 				CD2E16DE1E52AE0100A2C2A4 /* main.m in Sources */,
+				E9F3A3D71EF6225200F80392 /* FUOpenGLView.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -523,9 +540,7 @@
 					"$(PROJECT_DIR)/FULiveDemo/Faceunity/FaceunitySDK",
 					"$(PROJECT_DIR)/FULiveDemo/Faceunity/FaceUnity-SDK-iOS",
 				);
-
 				PRODUCT_BUNDLE_IDENTIFIER = com.faceunity.fulivedemo;
-
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -550,9 +565,7 @@
 					"$(PROJECT_DIR)/FULiveDemo/Faceunity/FaceunitySDK",
 					"$(PROJECT_DIR)/FULiveDemo/Faceunity/FaceUnity-SDK-iOS",
 				);
-
 				PRODUCT_BUNDLE_IDENTIFIER = com.faceunity.fulivedemo;
-
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				PROVISIONING_PROFILE_SPECIFIER = "";
