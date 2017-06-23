@@ -6,11 +6,25 @@
 //  Copyright © 2017年 千山暮雪. All rights reserved.
 //
 
+typedef enum : NSUInteger {
+    FUVideoFrameTypeBGRA,
+    FUVideoFrameTypeYUV,
+} FUVideoFrameType;
+
 struct FUVideoFrame {
-    void *bgraImg;
-    size_t width;
-    size_t height;
-    size_t size ;
-    size_t stride;
+    
     BOOL isUsed ; //判断是否使用过
+    FUVideoFrameType frameType ;
+    int width;
+    int height;
+    
+    // BGRA
+    void *bgraImg;
+    int size ;
+    int stride ;
+    // YUV
+    void *p_Y ;
+    void *p_CbCr ;
+    int stride_Y ;
+    int stride_CbCr ;
 };

@@ -18,10 +18,14 @@
                         <viewControllerLayoutGuide type="top" id="y3c-jy-aDJ"/>
                         <viewControllerLayoutGuide type="bottom" id="wfy-db-euE"/>
                     </layoutGuides>
-                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC" customClass="FUOpenGLView">
+                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC" customClass="FUBGRAOpenGLView">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
+                            <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="EKZ-18-hhR" customClass="FUYUVOpenGLView">
+                                <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                                <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
+                            </view>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="SBT-Gd-3MN">
                                 <rect key="frame" x="310" y="0.0" width="55" height="55"/>
                                 <state key="normal" image="camera_btn_shotcut_normal"/>
@@ -35,7 +39,7 @@
                                 <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <segmentedControl hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="4JB-yh-kQZ">
+                            <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="top" segmentControlStyle="plain" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="4JB-yh-kQZ">
                                 <rect key="frame" x="16" y="13.5" width="101" height="29"/>
                                 <segments>
                                     <segment title="BGRA"/>
@@ -77,9 +81,13 @@
                         <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstItem="jSw-MV-hvv" firstAttribute="centerY" secondItem="usO-GM-0FD" secondAttribute="centerY" constant="-10" id="7P2-ID-dhf"/>
+                            <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="EKZ-18-hhR" secondAttribute="bottom" id="9Sh-hT-NJN"/>
+                            <constraint firstItem="EKZ-18-hhR" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="Cuo-Hl-8V5"/>
+                            <constraint firstItem="EKZ-18-hhR" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="Fve-L4-OYE"/>
                             <constraint firstAttribute="trailing" secondItem="fEb-dE-FKO" secondAttribute="trailing" id="Fww-zy-IwP"/>
                             <constraint firstItem="wfy-db-euE" firstAttribute="top" secondItem="fEb-dE-FKO" secondAttribute="bottom" constant="-208" id="JX4-Sd-CVa"/>
                             <constraint firstItem="fEb-dE-FKO" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="NT8-Vu-3sj"/>
+                            <constraint firstAttribute="trailing" secondItem="EKZ-18-hhR" secondAttribute="trailing" id="Pje-cj-UsE"/>
                             <constraint firstItem="YWw-73-tqa" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="RUI-LA-4NE"/>
                             <constraint firstItem="jSw-MV-hvv" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="SLt-iR-ngK"/>
                             <constraint firstItem="SBT-Gd-3MN" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" id="T3s-Cx-C3S"/>
@@ -101,6 +109,7 @@
                         <outlet property="noTrackView" destination="YWw-73-tqa" id="rCd-rf-VLM"/>
                         <outlet property="photoBtn" destination="jSw-MV-hvv" id="GRH-Pn-3EG"/>
                         <outlet property="segment" destination="4JB-yh-kQZ" id="Wco-U4-1rz"/>
+                        <outlet property="yuvGLView" destination="EKZ-18-hhR" id="n3N-54-NAg"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>

@@ -17,7 +17,8 @@
 #import "authpack.h"
 
 #import "FUVideoFrame.h"
-#import "FUOpenGLView.h"
+#import "FUBGRAOpenGLView.h"
+#import "FUYUVOpenGLView.h"
 
 @interface ViewController ()<FUAPIDemoBarDelegate,FUCameraDelegate>
 {
@@ -27,9 +28,11 @@
     
     struct FUVideoFrame inFrame ;
     struct FUVideoFrame outFrame;
+    struct FUVideoFrame yuvTemFrame ;
     
     CVPixelBufferRef pixelBuffer ;
     
+    OSType bufferType ;
     // --------------- Faceunity ----------------
     
     FUCamera *curCamera;
@@ -50,12 +53,16 @@
 
 @property (weak, nonatomic) IBOutlet UIButton *changeCameraBtn;
 
-@property (strong, nonatomic) IBOutlet FUOpenGLView *bgraGLView;
+@property (strong, nonatomic) IBOutlet FUBGRAOpenGLView *bgraGLView;
+@property (weak, nonatomic) IBOutlet FUYUVOpenGLView *yuvGLView;
 
 // 输出队列
 @property (nonatomic, copy) dispatch_queue_t outputQueue;
 // 信号量
 @property (nonatomic, strong)dispatch_semaphore_t bufferSemaphore ;
+// 同步锁
+@property (nonatomic, strong)dispatch_semaphore_t frameSemaphore ;
+
 @end
 
 @implementation ViewController
@@ -71,6 +78,7 @@
     
     _outputQueue = dispatch_queue_create("output.FaceUnity", DISPATCH_QUEUE_SERIAL);
     _bufferSemaphore = dispatch_semaphore_create(1);
+    _frameSemaphore = dispatch_semaphore_create(1);
     
     [self addObserver];
     
@@ -78,7 +86,6 @@
     
     curCamera = self.bgraCamera;
     [curCamera startUp];
-    
 }
 
 - (void)initFaceunity
@@ -199,8 +206,7 @@
 }
 
 //拍照
-- (IBAction)takePhoto
-{
+- (IBAction)takePhoto {
     //拍照效果
     self.photoBtn.enabled = NO;
     UIView *whiteView = [[UIView alloc] initWithFrame:self.view.bounds];
@@ -217,8 +223,13 @@
             [whiteView removeFromSuperview];
         }];
     }];
-//    
-//    [curCamera takePhotoAndSave];
+    
+    if (bufferType == kCVPixelFormatType_32BGRA) {
+        [self.bgraGLView takePhotoAndSave];
+    }else if (bufferType == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange){
+        [self.yuvGLView takePhotoAndSave];
+    }
+    
     
     [self.bgraGLView takePhotoAndSave];
 }
@@ -236,7 +247,7 @@
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
     UITouch *touch = [touches allObjects].firstObject;
-    if (touch.view != self.view) {
+    if (touch.view != self.view && touch.view != self.yuvGLView) {
         return;
     }
     [UIView animateWithDuration:0.5 animations:^{
@@ -249,27 +260,28 @@
 
 #pragma -摄像头切换
 - (IBAction)changeCamera:(UIButton *)sender {
-    
+    [curCamera stopCapture];
     [self.bgraCamera changeCameraInputDeviceisFront:!self.bgraCamera.isFrontCamera];
     [self.yuvCamera changeCameraInputDeviceisFront:!self.yuvCamera.isFrontCamera];
-    [curCamera startCapture];
-    
 #warning 切换摄像头要调用此函数
     fuOnCameraChange();
+    [curCamera startCapture];
 }
 
 #pragma -BGRA/YUV切换
 - (IBAction)changeCaptureFormat:(UISegmentedControl *)sender {
+    
+    [curCamera stopCapture];
     if (sender.selectedSegmentIndex == 0 && curCamera == self.yuvCamera)
     {
-        [curCamera stopCapture];
         curCamera = self.bgraCamera;
+        self.yuvGLView.hidden = YES ;
+        
     }else if (sender.selectedSegmentIndex == 1 && curCamera == self.bgraCamera){
-        [curCamera stopCapture];
         curCamera = self.yuvCamera;
+        self.yuvGLView.hidden = NO ;
     }
     [curCamera startCapture];
-    
 }
 
 #pragma -FUAPIDemoBarDelegate
@@ -286,130 +298,225 @@
         return;
     }
     
-    CVPixelBufferRef buffer = CMSampleBufferGetImageBuffer(sampleBuffer) ;
-    CVPixelBufferLockBaseAddress(buffer, 0);
-    size_t width = CVPixelBufferGetWidth(buffer);
-    size_t height = CVPixelBufferGetHeight(buffer);
-    size_t size = CVPixelBufferGetDataSize(buffer);
-    size_t stride = CVPixelBufferGetBytesPerRow(buffer);
-    uint8_t *bufferImage = CVPixelBufferGetBaseAddress(buffer) ;
+    [self setUpContext];
     
-    if (inFrame.width != width || inFrame.height != height) {
-        free(inFrame.bgraImg);
-        inFrame.bgraImg = malloc(size * sizeof(void));
+    fuItemSetParamd(items[1], "cheek_thinning", self.demoBar.thinningLevel); //瘦脸
+    fuItemSetParamd(items[1], "eye_enlarging", self.demoBar.enlargingLevel); //大眼
+    fuItemSetParamd(items[1], "color_level", self.demoBar.beautyLevel); //美白
+    fuItemSetParams(items[1], "filter_name", (char *)[_demoBar.selectedFilter UTF8String]); //滤镜
+    fuItemSetParamd(items[1], "blur_level", self.demoBar.selectedBlur); //磨皮
+    fuItemSetParamd(items[1], "face_shape", self.demoBar.faceShape); //瘦脸类型
+    fuItemSetParamd(items[1], "face_shape_level", self.demoBar.faceShapeLevel); //瘦脸等级
+    fuItemSetParamd(items[1], "red_level", self.demoBar.redLevel); //红润
+    
+    CVPixelBufferRef buffer = CMSampleBufferGetImageBuffer(sampleBuffer) ;
+    bufferType = CVPixelBufferGetPixelFormatType(buffer);
+    
+    [self dealWithVideoFrameWithBuffer:buffer];
+}
+
+- (void)dealWithVideoFrameWithBuffer:(CVPixelBufferRef)buffer {
+    
+    if (bufferType == kCVPixelFormatType_32BGRA) {
+        // BGRA 格式
+        CVPixelBufferLockBaseAddress(buffer, 0);
+        int width = (int)CVPixelBufferGetWidth(buffer);
+        int height = (int)CVPixelBufferGetHeight(buffer);
+        int size = (int)CVPixelBufferGetDataSize(buffer);
+        int stride = (int)CVPixelBufferGetBytesPerRow(buffer);
+        uint8_t *bufferImage = CVPixelBufferGetBaseAddress(buffer) ;
+        
+        dispatch_semaphore_wait(_frameSemaphore, DISPATCH_TIME_FOREVER);
+        if (inFrame.width != width || inFrame.height != height || inFrame.frameType != FUVideoFrameTypeBGRA) {
+            free(inFrame.bgraImg);
+            inFrame.bgraImg = malloc(size * sizeof(void));
+        }
+        inFrame.width = width ;
+        inFrame.height = height ;
+        inFrame.size = size ;
+        inFrame.stride = stride ;
+        inFrame.frameType = FUVideoFrameTypeBGRA ;
+        memcpy(inFrame.bgraImg, bufferImage, size);
+        dispatch_semaphore_signal(_frameSemaphore);
+    }else if (bufferType == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) {
+        // YUV 格式
+        CVPixelBufferLockBaseAddress(buffer, 0);
+        int width = (int)CVPixelBufferGetWidth(buffer);
+        int height = (int)CVPixelBufferGetHeight(buffer);
+        int strideY = (int)CVPixelBufferGetBytesPerRowOfPlane(buffer, 0);
+        int strideUV = (int)CVPixelBufferGetBytesPerRowOfPlane(buffer, 1);
+        uint8_t *imageY = CVPixelBufferGetBaseAddressOfPlane(buffer, 0);
+        uint8_t *imageUV = CVPixelBufferGetBaseAddressOfPlane(buffer, 1);
+        
+        dispatch_semaphore_wait(_frameSemaphore, DISPATCH_TIME_FOREVER);
+        if (inFrame.width != width || inFrame.height != height || inFrame.frameType != FUVideoFrameTypeYUV) {
+            free(inFrame.p_Y);
+            free(inFrame.p_CbCr);
+            inFrame.p_Y = malloc(strideY * height * sizeof(void));
+            inFrame.p_CbCr = malloc(strideUV * height * 0.5 *sizeof(void));
+        }
+        inFrame.width = width ;
+        inFrame.height = height ;
+        inFrame.stride_Y = strideY ;
+        inFrame.stride_CbCr = strideUV ;
+        inFrame.frameType = FUVideoFrameTypeYUV ;
+        
+        memcpy(inFrame.p_Y, imageY, strideY * height * sizeof(void));
+        memcpy(inFrame.p_CbCr, imageUV, strideUV * height * sizeof(void) * 0.5);
+        dispatch_semaphore_signal(_frameSemaphore);
     }
-    inFrame.width = width ;
-    inFrame.height = height ;
-    inFrame.size = size ;
-    inFrame.stride = stride ;
-    inFrame.isUsed = NO ;
-    memcpy(inFrame.bgraImg, bufferImage, size);
     CVPixelBufferUnlockBaseAddress(buffer, 0);
     
+    
+    [self asycnCopyOutFrame];
+}
+
+- (void)asycnCopyOutFrame {
+    
     if (dispatch_semaphore_wait(_bufferSemaphore, DISPATCH_TIME_NOW) != 0) {
-//        NSLog(@"********* 进入~");
         return;
     }
     
     dispatch_async(_outputQueue, ^{
         
-        if (outFrame.width != inFrame.width || outFrame.height != inFrame.height) {
-            free(outFrame.bgraImg) ;
-            outFrame.bgraImg = malloc(size * sizeof(void)) ;
+        while (!inFrame.isUsed) {
+            
+            if (bufferType == kCVPixelFormatType_32BGRA) {
+                
+                dispatch_semaphore_wait(_frameSemaphore, DISPATCH_TIME_FOREVER);
+                if (outFrame.frameType != FUVideoFrameTypeBGRA || outFrame.width != inFrame.width || outFrame.height != inFrame.height) {
+                    free(outFrame.bgraImg) ;
+                    outFrame.bgraImg = malloc(inFrame.size * sizeof(void)) ;
+                }
+                
+                outFrame.width = inFrame.width ;
+                outFrame.height = inFrame.height ;
+                outFrame.size = inFrame.size ;
+                outFrame.stride = inFrame.stride ;
+                outFrame.frameType = FUVideoFrameTypeBGRA ;
+                memcpy(outFrame.bgraImg, inFrame.bgraImg, inFrame.height * inFrame.stride);
+                dispatch_semaphore_signal(_frameSemaphore);
+                
+            }else if (bufferType == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) {
+                
+                dispatch_semaphore_wait(_frameSemaphore, DISPATCH_TIME_FOREVER);
+                if (outFrame.frameType != FUVideoFrameTypeYUV || outFrame.width != inFrame.width || outFrame.height != inFrame.height) {
+                    free(outFrame.p_CbCr);
+                    free(outFrame.p_Y);
+                    outFrame.p_Y = malloc(inFrame.stride_Y * inFrame.height * sizeof(void));
+                    outFrame.p_CbCr = malloc(inFrame.stride_CbCr * inFrame.height * sizeof(void) * 0.5);
+                    fuOnCameraChange();
+                }
+                
+                outFrame.width = inFrame.width ;
+                outFrame.height = inFrame.height ;
+                outFrame.stride_Y = inFrame.stride_Y ;
+                outFrame.stride_CbCr = inFrame.stride_CbCr ;
+                outFrame.frameType = FUVideoFrameTypeYUV ;
+                memcpy(outFrame.p_Y, inFrame.p_Y, inFrame.stride_Y * inFrame.height * sizeof(void));
+                memcpy(outFrame.p_CbCr, inFrame.p_CbCr, inFrame.stride_CbCr * inFrame.height * sizeof(void) * 0.5);
+                dispatch_semaphore_signal(_frameSemaphore);
+            }
+            [self getPixelbufferWithOutVideoFrame];
         }
-        outFrame.width = inFrame.width ;
-        outFrame.height = inFrame.height ;
-        outFrame.size = inFrame.size ;
-        outFrame.stride = inFrame.stride ;
-        memcpy(outFrame.bgraImg, inFrame.bgraImg, size) ;
-        //        inFrame.isUsed = YES ;
-        [self outframCopyCompleted];
         
         dispatch_semaphore_signal(_bufferSemaphore);
     });
 }
 
-- (void)outframCopyCompleted {
-    
-    while (!inFrame.isUsed) {
-//        NSLog(@"------------------------- 循环输出~ ");
-        outFrame.width = inFrame.width ;
-        outFrame.height = inFrame.height ;
-        outFrame.size = inFrame.size ;
-        outFrame.stride = inFrame.stride ;
-        memcpy(outFrame.bgraImg, inFrame.bgraImg, inFrame.size);
-        //        inFrame.isUsed = YES ;
-        
-        [self getPixelbufferWithOutVideoFrame];
-    }
-}
 
 - (void)getPixelbufferWithOutVideoFrame {
     
-    size_t width = CVPixelBufferGetWidth(pixelBuffer);
-    size_t height = CVPixelBufferGetHeight(pixelBuffer);
-    
-    if (!pixelBuffer || width != outFrame.width || height != outFrame.height ) {
-        [self createPixelBufferWithSize:CGSizeMake(outFrame.width, outFrame.height)];
-    }
-    
-    CVPixelBufferLockBaseAddress(pixelBuffer, 0);
-    
-    uint8_t *bufferImg = CVPixelBufferGetBaseAddress(pixelBuffer);
-    memcpy(bufferImg, outFrame.bgraImg, outFrame.size);
-    
-    CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
-    
     [self setUpContext];
     
-    fuItemSetParamd(items[1], "cheek_thinning", 1.0); //瘦脸
-    fuItemSetParamd(items[1], "eye_enlarging", 0.5); //大眼
-    fuItemSetParamd(items[1], "color_level", 0.2); //美白
-    fuItemSetParams(items[1], "filter_name", (char *)[@"nature" UTF8String]); //滤镜
-    fuItemSetParamd(items[1], "blur_level", 6); //磨皮
-    fuItemSetParamd(items[1], "face_shape", 3); //瘦脸类型
-    fuItemSetParamd(items[1], "face_shape_level", 0.5); //瘦脸等级
-    fuItemSetParamd(items[1], "red_level", 0.5); //红润
-    
-    [[FURenderer shareRenderer] renderPixelBuffer:pixelBuffer withFrameId:frameID items:items itemCount:3 flipx:YES];
-    frameID += 1;
-    
-    [self.bgraGLView displayPixelBuffer:pixelBuffer IsMirror:NO];
+    if (bufferType == kCVPixelFormatType_32BGRA && outFrame.frameType == FUVideoFrameTypeBGRA) {
+        
+        fuRenderItemsEx(FU_FORMAT_BGRA_BUFFER, outFrame.bgraImg, FU_FORMAT_BGRA_BUFFER, outFrame.bgraImg, outFrame.stride / 4, outFrame.height, frameID, items, 3);
+        frameID += 1;
+        
+        size_t width = CVPixelBufferGetWidth(pixelBuffer);
+        size_t height = CVPixelBufferGetHeight(pixelBuffer);
+        OSType type = CVPixelBufferGetPixelFormatType(pixelBuffer) ;
+        if (!pixelBuffer || width != outFrame.width || height != outFrame.height || type != kCVPixelFormatType_32BGRA) {
+            [self createPixelBufferWithSize:CGSizeMake(outFrame.width, outFrame.height) captureFormat:kCVPixelFormatType_32BGRA];
+        }
+        
+        CVPixelBufferLockBaseAddress(pixelBuffer, 0);
+        
+        uint8_t *bufferImg = CVPixelBufferGetBaseAddress(pixelBuffer);
+        memcpy(bufferImg, outFrame.bgraImg, outFrame.size);
+        
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
+        
+        [self.bgraGLView displayPixelBuffer:pixelBuffer];
+        
+    }else if (bufferType == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange && outFrame.frameType == FUVideoFrameTypeYUV){
+        
+        TNV12Buffer yuvBuffer;
+        yuvBuffer.p_Y = outFrame.p_Y;
+        yuvBuffer.p_CbCr = outFrame.p_CbCr;
+        yuvBuffer.stride_Y = (int)outFrame.stride_Y;
+        yuvBuffer.stride_CbCr = (int)outFrame.stride_CbCr;
+        
+        fuRenderItemsEx(FU_FORMAT_NV12_BUFFER, &yuvBuffer, FU_FORMAT_NV12_BUFFER, &yuvBuffer, (int)outFrame.width, (int)outFrame.height, frameID, items, 3);
+        frameID += 1;
+        
+        int width = (int)CVPixelBufferGetWidth(pixelBuffer);
+        int height = (int)CVPixelBufferGetHeight(pixelBuffer);
+        OSType type = CVPixelBufferGetPixelFormatType(pixelBuffer) ;
+        if (!pixelBuffer || width != outFrame.width || height != outFrame.height || type != kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) {
+            [self createPixelBufferWithSize:CGSizeMake(outFrame.width, outFrame.height) captureFormat:kCVPixelFormatType_420YpCbCr8BiPlanarFullRange];
+        }
+        
+        CVPixelBufferLockBaseAddress(pixelBuffer, 0);
+        
+        uint8_t *bufferImg0 = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0);
+        uint8_t *bufferImg1 = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 1);
+        
+        memcpy(bufferImg0, yuvBuffer.p_Y, outFrame.stride_Y * outFrame.height * sizeof(void));
+        memcpy(bufferImg1, yuvBuffer.p_CbCr, outFrame.stride_CbCr * outFrame.height * sizeof(void) * 0.5);
+        
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, 0);
+        
+        [self.yuvGLView displayPixelBuffer:pixelBuffer];
+    }
 }
 
-- (void)createPixelBufferWithSize:(CGSize)size {
+
+- (void)createPixelBufferWithSize:(CGSize)size captureFormat:(int)captureFormat{
     if (pixelBuffer) {
         CFRelease(pixelBuffer) ;
         pixelBuffer = nil ;
     }
     NSDictionary* pixelBufferOptions = @{ (NSString*) kCVPixelBufferPixelFormatTypeKey :
-                                              @(kCVPixelFormatType_32BGRA),
+                                              @(captureFormat),
                                           (NSString*) kCVPixelBufferWidthKey : @(size.width),
                                           (NSString*) kCVPixelBufferHeightKey : @(size.height),
                                           (NSString*) kCVPixelBufferOpenGLESCompatibilityKey : @YES,
                                           (NSString*) kCVPixelBufferIOSurfacePropertiesKey : @{}};
     CVPixelBufferCreate(kCFAllocatorDefault,
                         size.width, size.height,
-                        kCVPixelFormatType_32BGRA,
+                        captureFormat,
                         (__bridge CFDictionaryRef)pixelBufferOptions,
                         &pixelBuffer);
 }
 
 #pragma -Faceunity Set EAGLContext
+
 static EAGLContext *mcontext;
 
-- (void)setUpContext
-{
+- (void)setUpContext {
+    
     if(!mcontext){
         mcontext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
     }
     if(!mcontext || ![EAGLContext setCurrentContext:mcontext]){
         NSLog(@"faceunity: failed to create / set a GLES2 context");
     }
-    
 }
 
 #pragma -Faceunity Load Data
+
 - (void)loadItem
 {
     [self setUpContext];
