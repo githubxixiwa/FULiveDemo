@@ -2,36 +2,64 @@
 
 FULiveDemo 是集成了 Faceunity 面部跟踪和虚拟道具及手势识别功能的Demo。
 
-## SDK v4.0 更新
-在v4.0版本中，我们全面升级了移动端实时深度学习框架，更好地支持视频应用中日益增长的AI需求。随之推出的第一个功能是背景分割，开启该功能的道具可以在相机画面中自动分割出人像，并替换背景为其他内容。
+## SDK v4.6 更新
 
-由于深度学习框架的升级，SDK的库文件从之前的 ~3M 增加到了 ~5M，如果不需要AI相关功能，可以下载[SDK lite版](https://github.com/Faceunity/FULiveDemo/releases)，库文件大小和老版本保持一致。
+本次更新主要包含以下改动：
 
-与新版SDK一起，我们也推出更方便和好用的2D/3D贴纸道具制作工具——FUEditor，助力视频应用快速应对市场，推出具有个性化和吸引力的道具和玩法。相关文档和下载在[这里](https://github.com/Faceunity/FUEditor)，制作过程中遇到问题可以联系我司技术支持。
+- 增强表情优化功能，在人脸快速转动时提高表情稳定性
 
-此外，我们优化了SDK的系统稳定性，在网络条件波动的情况下保持SDK正常运行，并提供了获取SDK系统错误信息的接口，方便应用灵活处理。
+具体更新内容可以到[这里](https://github.com/Faceunity/FULiveDemo/blob/beta/docs/FUNama%20SDK%20v4.6%20%E6%9B%B4%E6%96%B0%E6%96%87%E6%A1%A3.md)查看详细文档。
 
-## 下载SDK
+## 软件需求
 
-您可以在github下载iOS端Demo: [FULiveDemo](https://github.com/Faceunity/FULiveDemo/)，解压后得到一个FULiveDemo文件夹。根据路径"FULiveDemo/FULiveDemo/Faceunity/"找到Faceunity文件夹，该文件夹所包含的文件即是集成我们SDK所需的文件。目录结构截图如下：
+### 一、支持平台
 
-**Faceunity文件夹**
+    iOS 8.0以上系统
+  
+### 二、开发环境
 
- ![](./screenshots/picture0_0.png)
+    Xcode 8或更高版本
 
-**Faceunity-SDK-iOS文件夹**
+## SDK集成
 
- ![](./screenshots/picture0_1.png)
- 
-**items文件夹**
+### 一、通过cocoapods集成
 
- ![](./screenshots/picture0_2.png)
+含有深度学习的版本：
 
-### 文件说明
+	pod 'Nama', '4.6' #注意此版本目前为dev版
+	
+不含深度学习的版本（lite版）：
+	
+	pod 'Nama-lite', '4.6' #注意此版本目前为dev版
+
+接下来执行：
+
+	pod install
+	
+如果提示无法找到该版本，请尝试执行以下指令后再试：
+
+	pod repo update 或 pod setup
+	
+### 二、通过 github 下载集成
+
+含有深度学习的版本：[FaceUnity-SDK-iOS-v4.6-dev.zip](https://github.com/Faceunity/FULiveDemo/releases/download/v4.6-dev/FaceUnity-SDK-iOS-v4.6-dev.zip)
+	
+不含深度学习的版本（lite版）：[FaceUnity-SDK-iOS-v4.6-dev-lite.zip](https://github.com/Faceunity/FULiveDemo/releases/download/v4.6-dev/FaceUnity-SDK-iOS-v4.6-dev-lite.zip)
+
+下载完成并解压后将库文件夹拖入到工程中，并勾选上 Copy items if needed，如图：
 
 ---
+![](./screenshots/picture1.png)
+
+然后在Build Phases → Link Binary With Libraries 中添加依赖库，这里需要添加 OpenGLES.framework、Accelerate.framework、CoreMedia.framework、AVFoundation.framework、stdc++.tbd 这几个依赖库，如果你使用的是lite版可以不添加 stdc++.tbd 依赖，如图：
+
+---
+![](./screenshots/picture2.png)
+
+## 文件说明
+
 ### 一、头文件
-  - authpack.h 证书文件
+  - authpack.h 证书文件，一般由我司通过邮箱发送给使用者
   - funama.h C接口头文件
   - FURenderer.h OC接口头文件
   
@@ -41,32 +69,9 @@ FULiveDemo 是集成了 Faceunity 面部跟踪和虚拟道具及手势识别功�
 ### 三、数据文件
   - v3.bundle 初始化必须的二进制文件 
   - face_beautification.bundle 我司美颜相关的二进制文件
-  - items/*.bundle 我司制作的特效贴纸文件，自定义特效贴纸制作的文档和工具请联系我司获取。
+  - items/*.bundle 该文件夹位于 FULiveDemo 的字文件夹中，这些 .bundle 文件是我司制作的特效贴纸文件，自定义特效贴纸制作的文档和工具请联系我司获取。
 
 注：这些数据文件都是二进制数据，与扩展名无关。实际在app中使用时，打包在程序内或者从网络接口下载这些数据都是可行的，只要在相应的函数接口传入正确的文件路径即可。
-
-## Xcode工程设置
-
-### 一、支持平台
-
-    iOS 8.0以上系统
-  
-### 二、开发环境
-
-    Xcode 8或更高版本
-    
-### 三、Xcode工程设置
-
-首先，将下载的Faceunity文件夹拖入到项目中，并勾选上 Copy items if needed，如图：
-
----
-![](./screenshots/picture2.png)
-
-然后在Build Phases → Link Binary With Libraries 中添加依赖库，这里只需要添加Accelerate.framework一个库即可，如图：
-
----
-![](./screenshots/picture3.png)
-
 
 ## 初始化
 
@@ -107,7 +112,7 @@ NSString *v3Path = [[NSBundle mainBundle] pathForResource:@"v3" ofType:@"bundle"
     
 [[FURenderer shareRenderer] setupWithDataPath:v3Path authPackage:g_auth_package authSize:sizeof(g_auth_package) shouldCreateContext:YES];
 ```
-注：app启动后只需要setup一次FURenderer即可。
+注：app启动后只需要setup一次FURenderer即可，其中 g_auth_package 密钥数组声明在 authpack.h 中。
 
 至此，工程的配置及 SDK 的初始化工作已全部完成，下面就可以通过我们的 SDK 进行视频处理了！
 
@@ -268,16 +273,27 @@ frameID += 1;
 ### 一、滤镜
 
 在目前版本中提供以下滤镜：
-```C
-"nature", "delta", "electric", "slowlived", "tokyo", "warm"
+
+普通滤镜：
+
+```objc
+"origin", "delta", "electric", "slowlived", "tokyo", "warm"
 ```
 
-其中 "nature" 作为默认的美白滤镜，其他滤镜属于风格化滤镜。滤镜由参数 filter_name 指定。切换滤镜时，通过 fuItemSetParams 设置美颜道具的参数，如下：
+美颜滤镜：
+
+```objc
+"ziran", "danya", "fennen", "qingxin", "hongrun"
+```
+
+其中 "origin" 为原图滤镜，其他滤镜属于风格化滤镜及美颜滤镜。滤镜由参数 filter_name 指定。切换滤镜时，通过 fuItemSetParams 设置美颜道具的参数，如下：
 
 ```C
 //  Set item parameters - filter
-[FURenderer itemSetParam:items[1] withName:@"filter_name" value:@"nature"];
+[FURenderer itemSetParam:items[1] withName:@"filter_name" value:@"origin"];
 ```
+
+另外滤镜开放了滤镜强度接口，具体可到[这里](https://github.com/Faceunity/FULiveDemo/blob/beta/docs/%E8%A7%86%E9%A2%91%E7%BE%8E%E9%A2%9C%E6%9B%B4%E6%96%B0.md)查看详细信息。
 
 ### 二、美白和红润
 
