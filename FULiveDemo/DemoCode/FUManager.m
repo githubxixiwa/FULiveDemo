@@ -30,7 +30,6 @@ static FUManager *shareManager = NULL;
     dispatch_once(&onceToken, ^{
         shareManager = [[FUManager alloc] init];
     });
-    
     return shareManager;
 }
 
@@ -68,9 +67,6 @@ static FUManager *shareManager = NULL;
 
 /*设置默认参数*/
 - (void)setDefaultParameters {
-    
-    self.selectedItem = self.itemsDataSource[1]; //贴纸道具
-    
     self.selectedFilter = self.beautyFiltersDataSource[0]; //美颜滤镜效果
     
     self.selectedBlur = 6; //磨皮程度
@@ -90,14 +86,11 @@ static FUManager *shareManager = NULL;
     self.faceShape = 3; //美型类型
     
     self.enableGesture = NO;
-    self.enableMaxFaces = NO;
+    self.enableMaxFaces = YES;//开启多人识别  4个
 }
 
 - (void)loadItems
 {
-    /**加载普通道具*/
-    [self loadItem:self.selectedItem];
-    
     /**加载美颜道具*/
     [self loadFilter];
 }
@@ -174,10 +167,8 @@ static FUManager *shareManager = NULL;
     if ([itemName isEqual: @"noitem"] || itemName == nil)
     {
         if (items[0] != 0) {
-            
             NSLog(@"faceunity: destroy item");
             [FURenderer destroyItem:items[0]];
-            
             /**为避免道具句柄被销毁会后仍被使用导致程序出错，这里需要将存放道具句柄的items[0]设为0*/
             items[0] = 0;
         }

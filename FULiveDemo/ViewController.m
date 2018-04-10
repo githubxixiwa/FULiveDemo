@@ -63,12 +63,12 @@
     [[FUManager shareManager] loadItems];
     //显示道具的提示语
     dispatch_async(dispatch_get_main_queue(), ^{
-        NSString *hint = [[FUManager shareManager] hintForItem:[FUManager shareManager].selectedItem];
-        self.tipLabel.hidden = hint == nil;
-        self.tipLabel.text = hint;
-        
-        [ViewController cancelPreviousPerformRequestsWithTarget:self selector:@selector(dismissTipLabel) object:nil];
-        [self performSelector:@selector(dismissTipLabel) withObject:nil afterDelay:5 ];
+//        NSString *hint = [[FUManager shareManager] hintForItem:[FUManager shareManager].selectedItem];
+//        self.tipLabel.hidden = hint == nil;
+//        self.tipLabel.text = hint;
+//
+//        [ViewController cancelPreviousPerformRequestsWithTarget:self selector:@selector(dismissTipLabel) object:nil];
+//        [self performSelector:@selector(dismissTipLabel) withObject:nil afterDelay:5 ];
     });
     
     [self.mCamera startCapture];
@@ -154,7 +154,7 @@
     _demoBar.filtersCHName = [FUManager shareManager].filtersCHName;
     _demoBar.beautyFiltersDataSource = [FUManager shareManager].beautyFiltersDataSource;
     
-    _demoBar.selectedItem = [FUManager shareManager].selectedItem;      /**选中的道具名称*/
+//    _demoBar.selectedItem = [FUManager shareManager].selectedItem;      /**选中的道具名称*/
     _demoBar.selectedFilter = [FUManager shareManager].selectedFilter;  /**选中的滤镜名称*/
     _demoBar.whiteLevel = [FUManager shareManager].beautyLevel;        /**美白 (0~1)*/
     _demoBar.redLevel = [FUManager shareManager].redLevel;              /**红润 (0~1)*/

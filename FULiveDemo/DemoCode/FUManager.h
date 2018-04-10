@@ -25,7 +25,6 @@
 @property (nonatomic, assign)               double enlargingLevel;      /**大眼 (0~1)*/
 @property (nonatomic, strong)               NSString *selectedFilter;   /**选中的滤镜名称*/
 @property (nonatomic, assign)               double selectedFilterLevel; /**选中滤镜的程度*/
-@property (nonatomic, strong)               NSString *selectedItem;     /**选中的道具名称*/
 @property (nonatomic, strong)               NSArray<NSString *> *itemsDataSource;       /**道具名称数组*/
 @property (nonatomic, strong)               NSArray<NSString *> *filtersDataSource;     /**滤镜名称数组*/
 @property (nonatomic, strong)               NSArray<NSString *> *beautyFiltersDataSource;     /**美颜滤镜名称数组*/
