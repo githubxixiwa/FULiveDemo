@@ -243,6 +243,7 @@
         
         // 根据人脸中心点实时调节摄像头曝光参数及聚焦参数
         CGPoint center = [[FUManager shareManager] getFaceCenterInFrameSize:frameSize];;
+        NSLog(@"检测并  --  %@   center %@",NSStringFromCGSize(frameSize),NSStringFromCGPoint(center));
         self.mCamera.exposurePoint = CGPointMake(center.y,self.mCamera.isFrontCamera ? center.x:1-center.x);
         
         /** 显示表情校准 **/

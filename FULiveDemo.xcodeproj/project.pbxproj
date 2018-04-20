@@ -1239,7 +1239,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 35A6KD62ZJ;
+				DEVELOPMENT_TEAM = HDPKG474P5;
+				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/FULiveDemo/View",
@@ -1251,7 +1252,7 @@
 					"$(PROJECT_DIR)/FULiveDemo/Faceunity/FaceUnity-SDK-iOS",
 					"$(PROJECT_DIR)/FULiveDemo/Faceunity/FaceUnity-SDK-iOS-lite",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = FU.FULiveDemo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.biaoqing.fuliveDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -1263,7 +1264,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 35A6KD62ZJ;
+				DEVELOPMENT_TEAM = HDPKG474P5;
+				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/FULiveDemo/View",
@@ -1275,7 +1277,7 @@
 					"$(PROJECT_DIR)/FULiveDemo/Faceunity/FaceUnity-SDK-iOS",
 					"$(PROJECT_DIR)/FULiveDemo/Faceunity/FaceUnity-SDK-iOS-lite",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = FU.FULiveDemo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.biaoqing.fuliveDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
