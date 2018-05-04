@@ -140,7 +140,7 @@
     
     [self.mCamera startCapture];
     
-    if (self.model.type == FULiveModelTypeMusicFilter) {
+    if (self.model.type == FULiveModelTypeMusicFilter && ![[FUManager shareManager].selectedItem isEqualToString:@"noitem"]) {
         
         [[FUMusicPlayer sharePlayer] playMusic:@"douyin.mp3"];
 //        [self.mCamera addAudio];
@@ -504,7 +504,8 @@
 - (void)willEnterForeground
 {
     [_mCamera startCapture];
-    if (self.model.type == FULiveModelTypeMusicFilter) {
+    
+    if (self.model.type == FULiveModelTypeMusicFilter && ![[FUManager shareManager].selectedItem isEqualToString:@"noitem"]) {
         [[FUMusicPlayer sharePlayer] playMusic:@"douyin.mp3"] ;
     }
 }
@@ -512,7 +513,7 @@
 - (void)didBecomeActive
 {
     [_mCamera startCapture];
-    if (self.model.type == FULiveModelTypeMusicFilter) {
+    if (self.model.type == FULiveModelTypeMusicFilter && ![[FUManager shareManager].selectedItem isEqualToString:@"noitem"]) {
         [[FUMusicPlayer sharePlayer] playMusic:@"douyin.mp3"] ;
     }
 }
